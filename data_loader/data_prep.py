@@ -26,16 +26,6 @@ def add_RUL_piecewise(data, factor = 0):
     # TODO
     return None
 
-# def add_RUL_mockup(array):
-#     RUL_list = []
-#     for i in range(len(array[:,1])):
-#         RUL = array[i][0] + 4*array[i][1] + 2*array[i][2] + 3*array[i][3] + 7*array[i][4]
-#         RUL_list.append(RUL)
-#     RUL_list = np.asarray(RUL_list)
-#     RUL_list = RUL_list.reshape(len(RUL_list),1)
-#     array = np.hstack((array, RUL_list))
-#     return array
-
 def normalize_data(array, test):
     """
     This function normalizes the data with min-max normalization as specified in the scientific paper.
@@ -49,7 +39,8 @@ def normalize_data(array, test):
             original_col = array[:,i].reshape((len(array[:,i]), 1))
             norm_array = np.hstack((norm_array, original_col))
         else:
-            norm_array_i = (2*(array[:,i] - min(array[:,i])) / (max(array[:,i]) - min(array[:,i])) - 1).reshape((len(array[:,1]), 1))
+            norm_array_i = (2*(array[:,i] - min(array[:,i])) / (max(array[:,i]) -
+                            min(array[:,i])) - 1).reshape((len(array[:,1]), 1))
             norm_array = np.hstack((norm_array,norm_array_i))
     norm_array = np.delete(norm_array, 0, 1)
     return norm_array
@@ -81,6 +72,14 @@ def test_samples(sequence, window_size):
     X = np.array(X)
     return X
 
+def split_timeseries_per_feature(data, n_features):
+    # split input training data into separate time series, per feature
+    data_split = []
+    for i in range(n_features):
+        data_feature = data[:,:, i].reshape(data.shape[0], data.shape[1], 1)
+        data_split.append(data_feature)
+    return data_split
+
 def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, window_size=30):
     """
     This function does the following:
@@ -96,24 +95,19 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     """
     # 1)
     df = read_data(data_dir, filename)
-
     # 2)
     df.drop(columns=['s1','s5','s6','s10','s16','s18','s19'], inplace=True)
-
     if not test:
         # 3)
         df = add_RUL_linear(df)    
-
     # 4)
     array = df.to_numpy()
-
     # 5)
     array = normalize_data(array, test)
-
-    units = int(df['unit_number'].max())
     # 6) Apply sliding window on EACH engine unit, if train unit
+    units = int(df['unit_number'].max())
     if not test:
-        X = np.empty((1,window_size,19))
+        X = np.empty((1, window_size, 19))
         y = np.empty((1,))
         for i in range(1, units + 1):
             idx = array[:,0] == i
@@ -136,17 +130,6 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         data_path = os.path.join(data_dir, validation_RUL_file)
         test_RUL = pd.read_csv(data_path, header=None, dtype='float')
         y = test_RUL.to_numpy()
-
     # 7) Remove unit_id, time and the three settings from data
     X = X[:,:,5:]
-
     return X, y
-
-
-def split_timeseries_per_feature(data, n_features):
-    # split input training data into separate time series, per feature
-    data_split = []
-    for i in range(n_features):
-        data_feature = data[:,:, i].reshape(data.shape[0], data.shape[1], 1)
-        data_split.append(data_feature)
-    return data_split

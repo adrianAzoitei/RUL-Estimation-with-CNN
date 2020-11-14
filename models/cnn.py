@@ -8,7 +8,7 @@ def root_mean_squared_error(y_true, y_pred):
 opt = Adam(learning_rate=0.001)
 
 def build_model(window_size):
-        CNNmodel = tf.keras.models.Sequential([
+        model = tf.keras.models.Sequential([
                 tf.keras.layers.Conv1D(filters=10, kernel_size=10,
                                         strides=1, padding="same",
                                         activation="tanh",
@@ -27,11 +27,11 @@ def build_model(window_size):
                                         activation="tanh"),
                 tf.keras.layers.Flatten(),
                 tf.keras.layers.Dropout(0.5),
-                tf.keras.layers.Dense(100),
+                tf.keras.layers.Dense(100, activation="tanh"),
                 tf.keras.layers.Dense(1)])
-        CNNmodel.compile(optimizer=opt,
+        model.compile(optimizer=opt,
                 loss=root_mean_squared_error)
-        CNNmodel.summary()
-        return CNNmodel
+        model.summary()
+        return model
 
 
