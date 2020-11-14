@@ -39,7 +39,7 @@ def build_model(n_steps, n_features):
     concat = concatenate(cnns)
     flatten = Flatten()(concat)
     dropout = Dropout(0.5)(flatten)
-    dense = Dense(100, activation="tanh")(flatten)
+    dense = Dense(100, activation="tanh")(dropout)
     output = Dense(1)(dense)          
     model = Model(inputs=inputs, outputs=output)
     model.compile(optimizer=opt,

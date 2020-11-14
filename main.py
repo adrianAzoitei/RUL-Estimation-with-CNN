@@ -32,7 +32,7 @@ for i in range(4, 5):
     elif i == 2:
         window_size = 20
     elif i == 4:
-        window_size = 15
+        window_size = 14
 
     # load training data
     [X, y] = prepare_sub_dataset(DATA_DIR, train_file, window_size=window_size)
@@ -40,7 +40,7 @@ for i in range(4, 5):
     # min-max normalize labels
     min_y = min(y)
     max_y = max(y)
-    # y = (y - min_y) / (max_y - min_y)
+    y = (y - min_y) / (max_y - min_y)
 
     # split into train and validation data (80, 20 %)
     split = int(len(X) * 0.8)
@@ -58,7 +58,7 @@ for i in range(4, 5):
     # min-max normalize labels
     min_yv = min(y_test)
     max_yv = max(y_test)
-    # y_test = (y_test - min_yv) / (max_yv - min_yv)
+    y_test = (y_test - min_yv) / (max_yv - min_yv)
 
     # checkpoints and logs for TensorBoard
     ckpt_file ="weights_FD00{}.hdf5".format(i)
@@ -67,9 +67,6 @@ for i in range(4, 5):
 
     # train per-variable CNN
     model, history = train_per_variable(X_train, y_train, X_val, y_val, ckpt_path, logdir, window_size)
-
-    # train normal CNN
-    # model = train(X, y, X_val, y_val, ckpt_path, logdir, window_size)
 
     X_test = split_timeseries_per_feature(X_test, 14)
     predictions = model.predict(X_test)
