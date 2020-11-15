@@ -16,12 +16,12 @@ sys.path.insert(0, path)
 
 #import defined variables and methods
 from utils import DATA_DIR, CKPT_DIR, LOG_DIR
-from data_loader.data_prep import prepare_sub_dataset, add_RUL_linear, add_RUL_piecewise, normalize_data, sliding_window, split_timeseries_per_feature
+from data_loader.data_prep import prepare_sub_dataset, split_timeseries_per_feature
 from trainers.trainer_per_variable import train_per_variable
 # from trainers.trainer_original import train
 
 # take files sepparately
-for i in range(4, 5):
+for i in range(3, 4):
     train_file = 'train_FD00{}.txt'.format(i)
     test_file  = 'test_FD00{}.txt'.format(i)
     RUL_file = 'RUL_FD00{}.txt'.format(i)
@@ -32,33 +32,26 @@ for i in range(4, 5):
     elif i == 2:
         window_size = 20
     elif i == 4:
-        window_size = 14
+        window_size = 15
 
     # load training data
     [X, y] = prepare_sub_dataset(DATA_DIR, train_file, window_size=window_size)
-    print(type(X))
+    n_features = len(X[1,1,:])
     # min-max normalize labels
     min_y = min(y)
     max_y = max(y)
-    y = (y - min_y) / (max_y - min_y)
-
-    # split into train and validation data (80, 20 %)
-    split = int(len(X) * 0.8)
-    X_train = X[:split]
-    y_train = y[:split]
-    X_val = X[split:]
-    y_val = y[split:]
+    # y = (y - min_y) / (max_y - min_y)
 
     # load test data
-    [X_test, y_test] = prepare_sub_dataset(DATA_DIR, 
+    [X_val, y_val] = prepare_sub_dataset(DATA_DIR, 
                                         test_file, 
                                         RUL_file, 
                                         test=True,
                                         window_size=window_size)
     # min-max normalize labels
-    min_yv = min(y_test)
-    max_yv = max(y_test)
-    y_test = (y_test - min_yv) / (max_yv - min_yv)
+    min_yv = min(y_val)
+    max_yv = max(y_val)
+    # y_val = (y_val - min_yv) / (max_yv - min_yv)
 
     # checkpoints and logs for TensorBoard
     ckpt_file ="weights_FD00{}.hdf5".format(i)
@@ -66,15 +59,18 @@ for i in range(4, 5):
     logdir = os.path.join(LOG_DIR, datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # train per-variable CNN
-    model, history = train_per_variable(X_train, y_train, X_val, y_val, ckpt_path, logdir, window_size)
+    model = train_per_variable(X, y, X_val, y_val, ckpt_path, logdir, window_size)
 
-    X_test = split_timeseries_per_feature(X_test, 14)
-    predictions = model.predict(X_test)
+    # train normal CNN
+    # model = train(X, y, X_val, y_val, ckpt_path, logdir, window_size)
+
+    X_val = split_timeseries_per_feature(X_val, n_features)
+    predictions = model.predict(X_val)
     # # reconstruct predictions from normalized values
     # # predictions = predictions * (max_y - min_y) + min_y
-    # print(X_test[0].shape)
-    print("Ground truth vs prediction on test data:{} - {}".format(y_test[1], predictions[1]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_test[60], predictions[60]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_test[10], predictions[10]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_test[7], predictions[7]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_test[3], predictions[3]))
+    # print(X_val[0].shape)
+    print("Ground truth vs prediction on test data:{} - {}".format(y_val[1], predictions[1]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_val[60], predictions[60]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_val[10], predictions[10]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_val[7], predictions[7]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_val[3], predictions[3]))

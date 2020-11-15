@@ -7,27 +7,23 @@ def train_per_variable(X, y, X_val, y_val, ckpt_path, log_dir, window_size):
 
     checkpoint = ModelCheckpoint(ckpt_path, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
     tensorboard_callback = TensorBoard(log_dir=log_dir)
-
     # build model
-    model = build_model(window_size, 14)
-
+    n_features = len(X[1,1,:])
+    model = build_model(window_size, n_features)
     # split input validation data into separate time series, per feature
-    X = split_timeseries_per_feature(X, 14)
-    print(np.shape(X))
-    X_val = split_timeseries_per_feature(X_val, 14)
-    print(np.shape(X_val))
+    X = split_timeseries_per_feature(X, n_features)
+    X_val = split_timeseries_per_feature(X_val, n_features)
     # train
-    # history = [] # DELETE
     # model.load_weights(ckpt_path)
-    history = model.fit(X,
-                        y,
-                        validation_data=(X_val, y_val),
-                        epochs=250,
-                        batch_size=512,
-                        shuffle=True,
-                        verbose=1,
-                        callbacks=[checkpoint, tensorboard_callback])
-    
-    return model, history
+    model.fit(X,
+              y,
+              validation_data=(X_val, y_val),
+              epochs=250,
+              batch_size=1024,
+              shuffle=True,
+              verbose=1,
+              callbacks=[checkpoint, tensorboard_callback])
+
+    return model
 
     

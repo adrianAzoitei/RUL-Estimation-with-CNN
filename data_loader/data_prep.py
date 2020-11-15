@@ -35,10 +35,13 @@ def normalize_data(array, test):
     """
     norm_array = np.ones((len(array[:,1]), 1))
     for i in range(len(array[1,:])):
+        # if the array is made of training data, do not normalize the last column (RUL values)
+        # never normalize the first 5 columns: unit_number, time_in_cycles etc.
         if ((i == len(array[1,:])-1) and not test) or (i < 5):
             original_col = array[:,i].reshape((len(array[:,i]), 1))
             norm_array = np.hstack((norm_array, original_col))
         else:
+            # x_norm = 2 * (x - x_min) / (x_max - x_min) - 1
             norm_array_i = (2*(array[:,i] - min(array[:,i])) / (max(array[:,i]) -
                             min(array[:,i])) - 1).reshape((len(array[:,1]), 1))
             norm_array = np.hstack((norm_array,norm_array_i))
@@ -62,7 +65,7 @@ def sliding_window(sequence, window_size):
     y = np.array(y)
     return X,y
 
-def test_samples(sequence, window_size):
+def test_sliding_window(sequence, window_size):
     # sequence is the array of values associated with ONE engine unit
     X = []
     # find the start of this pattern
@@ -73,6 +76,11 @@ def test_samples(sequence, window_size):
     return X
 
 def split_timeseries_per_feature(data, n_features):
+    """
+    Function that splits the data per feature.
+    Input: Multivariate timeseries, data: numpy array.
+    Output: List of numpy arrays of shape (features, samples, window_size)
+    """
     # split input training data into separate time series, per feature
     data_split = []
     for i in range(n_features):
@@ -104,10 +112,10 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     array = df.to_numpy()
     # 5)
     array = normalize_data(array, test)
-    # 6) Apply sliding window on EACH engine unit, if train unit
+    # 6) Apply sliding window on EACH engine unit, if training data
     units = int(df['unit_number'].max())
     if not test:
-        X = np.empty((1, window_size, 19))
+        X = np.empty((1, window_size, 19)) # 14 features + 5 variables (unit number, time etc.)
         y = np.empty((1,))
         for i in range(1, units + 1):
             idx = array[:,0] == i
@@ -122,7 +130,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         X = np.empty((1, window_size, 19))
         for i in range(1, units + 1):
             idx = array[:,0] == i
-            X_unit = test_samples(array[idx], window_size)
+            X_unit = test_sliding_window(array[idx], window_size)
             X = np.concatenate((X, X_unit), axis=0)
         # discard first elements (which are empty)
         X = X[1:]

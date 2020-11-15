@@ -1,18 +1,14 @@
 import tensorflow as tf
 from keras import backend as K
-from keras.optimizers import Adam
+from keras.optimizers import Adam, schedules
 from keras.models import Model
 from keras.layers import Input, Dense, Flatten, Dropout, Reshape
 from keras.layers.convolutional import Conv1D
 from keras.layers.merge import concatenate
-from keras.initializers import GlorotNormal
 
-# COPYRIGHT
-# https://machinelearningmastery.com/how-to-develop-convolutional-neural-network-models-for-time-series-forecasting/
-
-def root_mean_squared_error(y_true, y_pred):
-        return K.sqrt(K.mean(K.square(y_pred - y_true))) 
-opt = Adam(learning_rate=0.001)
+boundaries = [4400, ]
+values = [0.001, 0.001]
+opt = Adam(learning_rate=schedules.PiecewiseConstantDecay(boundaries, values))
 
 def build_model(n_steps, n_features):
     cnns = []
@@ -35,6 +31,8 @@ def build_model(n_steps, n_features):
         conv5 = Conv1D(filters=1, kernel_size=3,
                                     strides=1, padding="same",
                                     activation="tanh", name='conv5.{}'.format(i))(conv4)
+        # flatten = Flatten()(conv5)
+        # dropout = Dropout(0.5)(flatten)
         cnns.append(conv5)
     concat = concatenate(cnns)
     flatten = Flatten()(concat)
@@ -43,6 +41,7 @@ def build_model(n_steps, n_features):
     output = Dense(1)(dense)          
     model = Model(inputs=inputs, outputs=output)
     model.compile(optimizer=opt,
-                loss=root_mean_squared_error)
+                loss = 'mse',
+                metrics=[tf.keras.metrics.RootMeanSquaredError()])
     model.summary()
     return model
