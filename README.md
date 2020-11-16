@@ -10,7 +10,8 @@ Tried the following so far:
 - [x] Fitting the model on dummy data -> it works, although the training is very sensitive to the window_size.
 - [x] Normalizing the labels similarly to the training data (min-max norm).
 - [x] Implementing step learning rate.
-- [ ] Implementing the piece-wise RUL function.
+- [x] Implementing the piece-wise RUL function.
+- [ ] Shuffle the windows.
 
 ## References
 <a id="1">[1]</a> 

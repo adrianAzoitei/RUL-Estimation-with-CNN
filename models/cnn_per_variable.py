@@ -5,10 +5,20 @@ from keras.models import Model
 from keras.layers import Input, Dense, Flatten, Dropout, Reshape
 from keras.layers.convolutional import Conv1D
 from keras.layers.merge import concatenate
+import math
 
-boundaries = [4400, ]
-values = [0.001, 0.001]
-opt = Adam(learning_rate=schedules.PiecewiseConstantDecay(boundaries, values))
+def root_mean_squared_error(y_true, y_pred):
+        return K.sqrt(K.mean(K.square(y_pred - y_true))) 
+
+def step_decay(epoch):
+   initial_lrate = 0.001
+   if epoch > 200:
+       lrate = 0.0001
+   else:
+       lrate = initial_lrate
+   return lrate
+
+opt = Adam(learning_rate=0.001)
 
 def build_model(n_steps, n_features):
     cnns = []
@@ -16,32 +26,27 @@ def build_model(n_steps, n_features):
     for i in range(1, n_features + 1):
         inp = Input(shape=(n_steps, 1))
         inputs.append(inp)
-        conv1 = Conv1D(filters=10, kernel_size=10,
-                                    strides=1, padding="same",
+        conv1 = Conv1D(filters=10, kernel_size=10, padding="same",
                                     activation="tanh", name='conv1.{}'.format(i))(inp)
-        conv2 = Conv1D(filters=10, kernel_size=10,
-                                    strides=1, padding="same",
+        conv2 = Conv1D(filters=10, kernel_size=10, padding="same",
                                     activation="tanh", name='conv2.{}'.format(i))(conv1)
-        conv3 = Conv1D(filters=10, kernel_size=10,
-                                    strides=1, padding="same",
+        conv3 = Conv1D(filters=10, kernel_size=10, padding="same",
                                     activation="tanh", name='conv3.{}'.format(i))(conv2)
-        conv4 = Conv1D(filters=10, kernel_size=10,
-                                    strides=1, padding="same",
+        conv4 = Conv1D(filters=10, kernel_size=10, padding="same",
                                     activation="tanh", name='conv4.{}'.format(i))(conv3)
-        conv5 = Conv1D(filters=1, kernel_size=3,
-                                    strides=1, padding="same",
+        conv5 = Conv1D(filters=1, kernel_size=10, padding="same",
                                     activation="tanh", name='conv5.{}'.format(i))(conv4)
-        # flatten = Flatten()(conv5)
-        # dropout = Dropout(0.5)(flatten)
         cnns.append(conv5)
+
     concat = concatenate(cnns)
     flatten = Flatten()(concat)
     dropout = Dropout(0.5)(flatten)
     dense = Dense(100, activation="tanh")(dropout)
     output = Dense(1)(dense)          
     model = Model(inputs=inputs, outputs=output)
+
     model.compile(optimizer=opt,
-                loss = 'mse',
-                metrics=[tf.keras.metrics.RootMeanSquaredError()])
+                  loss='mse')
     model.summary()
+
     return model
