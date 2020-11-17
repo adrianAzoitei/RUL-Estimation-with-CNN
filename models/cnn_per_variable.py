@@ -11,7 +11,7 @@ def root_mean_squared_error(y_true, y_pred):
 
 def step_decay(epoch):
    initial_lrate = 0.001
-   if epoch > 100:
+   if epoch > 200:
        lrate = 0.0001
    else:
        lrate = initial_lrate
@@ -46,7 +46,8 @@ def build_model(n_steps, n_features):
     output = Dense(1)(dense) 
 
     model = Model(inputs=inputs, outputs=output)
+    model.summary()
     model.compile(optimizer='adam',
-                  loss=root_mean_squared_error)
+                  loss='mse')
     model.summary()
     return model

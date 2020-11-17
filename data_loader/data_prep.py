@@ -17,9 +17,9 @@ def add_RUL(data, factor = 0, piecewise=True):
     RUL = df['max'] - df['time_in_cycles']
     if piecewise:
         # rectify training RUL labels (Rearly = 125)
-        idx = RUL <= 125
-        df['RUL'] = 125
-        df['RUL'][idx] = df['max'] - df['time_in_cycles']
+        idx = RUL > 125
+        df['RUL'] = RUL
+        df['RUL'][idx] = 125
     else:
         df['RUL'] = RUL
     df.drop(columns=['max'],inplace = True)
@@ -44,14 +44,13 @@ def normalize_data(array, test):
             original_col = array[:,i].reshape((len(array[:,i]), 1))
             norm_array = np.hstack((norm_array, original_col))
         else:
-            # x_norm = 2 * (x - x_min) / (x_max - x_min) - 1
             norm_array_i = (2*(array[:,i] - min(array[:,i])) / (max(array[:,i]) -
                             min(array[:,i])) - 1).reshape((len(array[:,1]), 1))
             norm_array = np.hstack((norm_array,norm_array_i))
     norm_array = np.delete(norm_array, 0, 1)
     return norm_array
 
-def sliding_window(sequence, window_size, predict=True):
+def sliding_window(sequence, window_size, predict=False):
     X = []
     y = []
     for i in range(len(sequence)):
