@@ -18,7 +18,7 @@ def train_per_variable(X, y, X_val, y_val, ckpt_path, log_dir, window_size):
     model.fit(X,
               y,
               validation_data=(X_val, y_val),
-              epochs=250,
+              epochs=100,
               batch_size=1024,
               shuffle=True,
               verbose=1,

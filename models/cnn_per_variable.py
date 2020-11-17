@@ -6,9 +6,7 @@ from keras.layers import Input, Dense, Flatten, Dropout, Reshape
 from keras.layers.convolutional import Conv1D
 from keras.layers.merge import concatenate
 
-boundaries = [4400, ]
-values = [0.001, 0.001]
-opt = Adam(learning_rate=schedules.PiecewiseConstantDecay(boundaries, values))
+opt = Adam(learning_rate=0.001)
 
 def build_model(n_steps, n_features):
     cnns = []
@@ -41,7 +39,6 @@ def build_model(n_steps, n_features):
     output = Dense(1)(dense)          
     model = Model(inputs=inputs, outputs=output)
     model.compile(optimizer=opt,
-                loss = 'mse',
-                metrics=[tf.keras.metrics.RootMeanSquaredError()])
+                loss = 'mse')
     model.summary()
     return model

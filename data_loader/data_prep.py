@@ -5,7 +5,7 @@ from data_loader.read_data import read_data
 
 # add RUL column
 # copyright: https://www.kaggle.com/vinayak123tyagi/damage-propagation-modeling-for-aircraft-engine
-def add_RUL_linear(data, factor = 0):
+def add_RUL(data, factor = 0):
     """
     This function appends a RUL column to the df by means of a linear function.
     """
@@ -18,13 +18,6 @@ def add_RUL_linear(data, factor = 0):
     df.drop(columns=['max'],inplace = True)
     
     return df[df['time_in_cycles'] > factor]
-
-def add_RUL_piecewise(data, factor = 0):
-    """
-    This function appends a RUL column to the df by means of a piece-wise function.
-    """
-    # TODO
-    return None
 
 def normalize_data(array, test):
     """
@@ -63,7 +56,12 @@ def sliding_window(sequence, window_size):
         y.append(seq_y)
     X = np.array(X)
     y = np.array(y)
-    return X,y
+    # randomly shuffle the windows between themselves in unison with the correct labels
+    rng_state = np.random.get_state()
+    np.random.shuffle(X)
+    np.random.set_state(rng_state)
+    np.random.shuffle(y)
+    return X, y
 
 def test_sliding_window(sequence, window_size):
     # sequence is the array of values associated with ONE engine unit
@@ -107,7 +105,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     df.drop(columns=['s1','s5','s6','s10','s16','s18','s19'], inplace=True)
     if not test:
         # 3)
-        df = add_RUL_linear(df)    
+        df = add_RUL(df)    
     # 4)
     array = df.to_numpy()
     # 5)
@@ -119,6 +117,8 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         y = np.empty((1,))
         for i in range(1, units + 1):
             idx = array[:,0] == i
+            # norm = normalize_data(array[idx], test)
+            # X_unit, y_unit = sliding_window(norm, window_size)
             X_unit, y_unit = sliding_window(array[idx], window_size)
             X = np.concatenate((X, X_unit), axis=0)
             y = np.concatenate((y, y_unit), axis=0)
@@ -138,6 +138,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         data_path = os.path.join(data_dir, validation_RUL_file)
         test_RUL = pd.read_csv(data_path, header=None, dtype='float')
         y = test_RUL.to_numpy()
+        y = y.reshape(len(y),)
     # 7) Remove unit_id, time and the three settings from data
     X = X[:,:,5:]
     return X, y

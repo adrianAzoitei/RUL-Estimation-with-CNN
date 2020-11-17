@@ -38,21 +38,28 @@ for i in range(3, 4):
     [X, y] = prepare_sub_dataset(DATA_DIR, train_file, window_size=window_size)
     n_features = len(X[1,1,:])
     # min-max normalize labels
-    min_y = min(y)
-    max_y = max(y)
+    # min_y = min(y)
+    # max_y = max(y)
     # y = (y - min_y) / (max_y - min_y)
 
+    # split data into training and validation
+    split = int(len(X[:, 1, 1])*.7)
+    X_train = X[:split]
+    y_train = y[:split]
+    X_val = X[split:]
+    y_val = y[split:]
+    # min-max normalize labels
+    # min_yv = min(y_val)
+    # max_yv = max(y_val)
+    # y_val = (y_val - min_yv) / (max_yv - min_yv)
+
     # load test data
-    [X_val, y_val] = prepare_sub_dataset(DATA_DIR, 
+    [X_test, y_test] = prepare_sub_dataset(DATA_DIR, 
                                         test_file, 
                                         RUL_file, 
                                         test=True,
                                         window_size=window_size)
-    # min-max normalize labels
-    min_yv = min(y_val)
-    max_yv = max(y_val)
-    # y_val = (y_val - min_yv) / (max_yv - min_yv)
-
+    
     # checkpoints and logs for TensorBoard
     ckpt_file ="weights_FD00{}.hdf5".format(i)
     ckpt_path = os.path.join(CKPT_DIR, ckpt_file)
@@ -64,13 +71,13 @@ for i in range(3, 4):
     # train normal CNN
     # model = train(X, y, X_val, y_val, ckpt_path, logdir, window_size)
 
-    X_val = split_timeseries_per_feature(X_val, n_features)
-    predictions = model.predict(X_val)
+    X_test = split_timeseries_per_feature(X_test, n_features)
+    predictions = model.predict(X_test)
     # # reconstruct predictions from normalized values
     # # predictions = predictions * (max_y - min_y) + min_y
     # print(X_val[0].shape)
-    print("Ground truth vs prediction on test data:{} - {}".format(y_val[1], predictions[1]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_val[60], predictions[60]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_val[10], predictions[10]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_val[7], predictions[7]))
-    print("Ground truth vs prediction on test data:{} - {}".format(y_val[3], predictions[3]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_test[1], predictions[1]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_test[60], predictions[60]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_test[10], predictions[10]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_test[7], predictions[7]))
+    print("Ground truth vs prediction on test data:{} - {}".format(y_test[3], predictions[3]))
