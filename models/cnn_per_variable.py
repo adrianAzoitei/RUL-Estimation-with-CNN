@@ -7,11 +7,11 @@ from keras.layers.convolutional import Conv1D
 from keras.layers.merge import concatenate
 
 def root_mean_squared_error(y_true, y_pred):
-        return K.sqrt(K.mean(K.square(y_pred - y_true)))
+    return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
 def step_decay(epoch):
    initial_lrate = 0.001
-   if epoch > 200:
+   if epoch > 100:
        lrate = 0.0001
    else:
        lrate = initial_lrate

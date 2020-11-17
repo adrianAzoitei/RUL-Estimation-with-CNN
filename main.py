@@ -19,6 +19,7 @@ sys.path.insert(0, path)
 from utils import DATA_DIR, CKPT_DIR, LOG_DIR
 from data_loader.data_prep import prepare_sub_dataset, split_timeseries_per_feature
 from trainers.trainer_per_variable import train_per_variable
+# from trainers.trainer_original import train
 
 # take files sepparately
 for i in range(1, 2):
@@ -37,20 +38,20 @@ for i in range(1, 2):
     # choose piecewise or linear RUL function
     piecewise = True
     # load training data
-    [X, y] = prepare_sub_dataset(DATA_DIR, 
+    [X_train, y_train] = prepare_sub_dataset(DATA_DIR, 
                                  train_file, 
                                  window_size=window_size,
                                  piecewise=piecewise)
-    n_features = len(X[1,1,:])
+    n_features = len(X_train[1,1,:])
     # min-max normalize labels
-    min_y = min(y)
-    max_y = max(y)
-    y = (y - min_y) / (max_y - min_y)
+    # min_y = min(y)
+    # max_y = max(y)
+    # y = (y - min_y) / (max_y - min_y)
 
     # split data into training and validation
-    split = int(len(X[:, 1, 1])*.8)
-    X_train = X#[:split]
-    y_train = y#[:split]
+    # split = int(len(X[:, 1, 1])*.7)
+    # X_train = X[:split]
+    # y_train = y[:split]
     # X_val = X[split:]
     # y_val = y[split:]
 
@@ -68,7 +69,10 @@ for i in range(1, 2):
     logdir = os.path.join(LOG_DIR, datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # train per-variable CNN
-    model, history = train_per_variable(X, y, ckpt_path, logdir, window_size)
+    # model, history = train_per_variable(X_train, y_train, X_val, y_val, ckpt_path, logdir, window_size)
+    model, history = train_per_variable(X_train, y_train, ckpt_path, logdir, window_size)
+    # train normal CNN
+    # model = train(X_train, y_train, X_val, y_val, ckpt_path, logdir, window_size)
 
     import matplotlib.pyplot as plt
     nb_epoch = len(history.history['loss'])
@@ -87,7 +91,7 @@ for i in range(1, 2):
     X_test = split_timeseries_per_feature(X_test, n_features)
     predictions = model.predict(X_test)
     # reconstruct predictions from normalized values
-    predictions = predictions * (max_y - min_y) + min_y
+    # predictions = predictions * (max_y - min_y) + min_y
     for i in range(100):
         print("Ground truth vs prediction on test data:{} - {}".format(y_test[i], predictions[i]))
 
@@ -96,17 +100,18 @@ for i in range(1, 2):
     testRMSE = math.sqrt(sum((predictions - y_test) ** 2)/len(y_test))
     print('Test set RMSE:{}'.format(testRMSE))
     unit = np.arange(0, len(y_test))
-    predictions = predictions.reshape(len(predictions), 1)
-    y_test = y_test.reshape(len(y_test), 1)
-    unit = unit.reshape(len(unit), 1)
-    y_test = np.hstack((unit, y_test))
-    predictions = np.hstack((unit, predictions))
-    sorted_y_test = np.sort(y_test, axis=0)
-    idx = sorted_y_test[:,0].astype('int')
-    sorted_predictions = predictions[idx,:]
+
+    # predictions = predictions.reshape(len(predictions), 1)
+    # y_test = y_test.reshape(len(y_test), 1)
+    # unit = unit.reshape(len(unit), 1)
+    # y_test = np.hstack((unit, y_test))
+    # predictions = np.hstack((unit, predictions))
+    # sorted_y_test = np.sort(y_test, axis=0)
+    # idx = sorted_y_test[:,0].astype('int')
+    # sorted_predictions = predictions[idx,:]
     plt.figure(4,figsize=(7,5))
-    plt.plot(idx, sorted_predictions[:,1], 'r--')
-    plt.plot(idx, sorted_y_test[:,1], 'b-')
+    plt.plot(unit, predictions, 'r--')
+    plt.plot(unit, y_test, 'b-')
     plt.xlabel('Test units')
     plt.ylabel('RUL')
     plt.grid(True)
