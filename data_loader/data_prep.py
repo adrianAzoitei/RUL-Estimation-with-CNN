@@ -5,7 +5,7 @@ from data_loader.read_data import read_data
 
 # add RUL column
 # copyright: https://www.kaggle.com/vinayak123tyagi/damage-propagation-modeling-for-aircraft-engine
-def add_RUL(data, factor = 0):
+def add_RUL(data, factor = 0, piecewise=True):
     """
     This function appends a RUL column to the df by means of a linear function.
     """
@@ -14,9 +14,19 @@ def add_RUL(data, factor = 0):
     fd_RUL = pd.DataFrame(fd_RUL)
     fd_RUL.columns = ['unit_number','max']
     df = df.merge(fd_RUL, on=['unit_number'], how='left')
-    df['RUL'] = df['max'] - df['time_in_cycles']
+    RUL = df['max'] - df['time_in_cycles']
+    if piecewise:
+        # rectify training RUL labels (Rearly = 125)
+        idx = RUL <= 125
+        df['RUL'] = 125
+        df['RUL'][idx] = df['max'] - df['time_in_cycles']
+    else:
+        df['RUL'] = RUL
     df.drop(columns=['max'],inplace = True)
-    
+    import matplotlib.pyplot as plt
+    plt.plot(df[df['unit_number']==1]['time_in_cycles'],
+             df[df['unit_number']==1]['RUL'])
+    plt.show()
     return df[df['time_in_cycles'] > factor]
 
 def normalize_data(array, test):
@@ -41,7 +51,7 @@ def normalize_data(array, test):
     norm_array = np.delete(norm_array, 0, 1)
     return norm_array
 
-def sliding_window(sequence, window_size):
+def sliding_window(sequence, window_size, predict=True):
     X = []
     y = []
     for i in range(len(sequence)):
@@ -56,11 +66,12 @@ def sliding_window(sequence, window_size):
         y.append(seq_y)
     X = np.array(X)
     y = np.array(y)
-    # randomly shuffle the windows between themselves in unison with the correct labels
-    rng_state = np.random.get_state()
-    np.random.shuffle(X)
-    np.random.set_state(rng_state)
-    np.random.shuffle(y)
+    if not predict:
+        # randomly shuffle the windows between themselves in unison with the correct labels
+        rng_state = np.random.get_state()
+        # np.random.shuffle(X)
+        # np.random.set_state(rng_state)
+        # np.random.shuffle(y)
     return X, y
 
 def test_sliding_window(sequence, window_size):
@@ -86,7 +97,7 @@ def split_timeseries_per_feature(data, n_features):
         data_split.append(data_feature)
     return data_split
 
-def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, window_size=30):
+def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, window_size=30, piecewise=True, predict=False):
     """
     This function does the following:
     1) Reads a FD00X file associated with one sub-dataset into a pandas DataFrame.
@@ -105,7 +116,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     df.drop(columns=['s1','s5','s6','s10','s16','s18','s19'], inplace=True)
     if not test:
         # 3)
-        df = add_RUL(df)    
+        df = add_RUL(df, piecewise=piecewise)    
     # 4)
     array = df.to_numpy()
     # 5)
@@ -119,7 +130,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
             idx = array[:,0] == i
             # norm = normalize_data(array[idx], test)
             # X_unit, y_unit = sliding_window(norm, window_size)
-            X_unit, y_unit = sliding_window(array[idx], window_size)
+            X_unit, y_unit = sliding_window(array[idx], window_size, predict=predict)
             X = np.concatenate((X, X_unit), axis=0)
             y = np.concatenate((y, y_unit), axis=0)
         # discard first elements (which are empty)
@@ -138,7 +149,12 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         data_path = os.path.join(data_dir, validation_RUL_file)
         test_RUL = pd.read_csv(data_path, header=None, dtype='float')
         y = test_RUL.to_numpy()
+        if piecewise:
+            # rectify test RUL labels as well (Rearly = 125)
+            idx = y > 125
+            y[idx] = 125
         y = y.reshape(len(y),)
-    # 7) Remove unit_id, time and the three settings from data
-    X = X[:,:,5:]
+    if not predict:
+        # 7) Remove unit_id, time and the three settings from data
+        X = X[:,:,5:]
     return X, y
