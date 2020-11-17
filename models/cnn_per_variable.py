@@ -25,24 +25,24 @@ def build_model(n_steps, n_features):
         inputs.append(inp)
         conv1 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
-                                    activation="tanh", name='conv1.{}'.format(i))(inp)
+                                    activation='tanh', name='conv1.{}'.format(i))(inp)
         conv2 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
-                                    activation="tanh", name='conv2.{}'.format(i))(conv1)
+                                    activation='tanh', name='conv2.{}'.format(i))(conv1)
         conv3 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
-                                    activation="tanh", name='conv3.{}'.format(i))(conv2)
+                                    activation='tanh', name='conv3.{}'.format(i))(conv2)
         conv4 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
-                                    activation="tanh", name='conv4.{}'.format(i))(conv3)
+                                    activation='tanh', name='conv4.{}'.format(i))(conv3)
         conv5 = Conv1D(filters=1, kernel_size=3,
                                     strides=1, padding="same",
-                                    activation="tanh", name='conv5.{}'.format(i))(conv4)
+                                    activation='tanh', name='conv5.{}'.format(i))(conv4)
         cnns.append(conv5)
     concat = concatenate(cnns)
     flatten = Flatten()(concat)
     dropout = Dropout(0.5)(flatten)
-    dense = Dense(100, activation="tanh")(dropout)
+    dense = Dense(100, activation='tanh')(dropout)
     output = Dense(1)(dense) 
 
     model = Model(inputs=inputs, outputs=output)

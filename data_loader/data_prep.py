@@ -112,15 +112,19 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     """
     # 1)
     df = read_data(data_dir, filename)
+
     # 2)
     df.drop(columns=['s1','s5','s6','s10','s16','s18','s19'], inplace=True)
+
     if not test:
         # 3)
         df = add_RUL(df, piecewise=piecewise)    
     # 4)
     array = df.to_numpy()
+
     # 5)
     array = normalize_data(array, test)
+
     # 6) Apply sliding window on EACH engine unit, if training data
     units = int(df['unit_number'].max())
     if not test:
@@ -128,8 +132,6 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         y = np.empty((1,))
         for i in range(1, units + 1):
             idx = array[:,0] == i
-            # norm = normalize_data(array[idx], test)
-            # X_unit, y_unit = sliding_window(norm, window_size)
             X_unit, y_unit = sliding_window(array[idx], window_size, predict=predict)
             X = np.concatenate((X, X_unit), axis=0)
             y = np.concatenate((y, y_unit), axis=0)
@@ -154,7 +156,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
             idx = y > 125
             y[idx] = 125
         y = y.reshape(len(y),)
-    if not predict:
-        # 7) Remove unit_id, time and the three settings from data
-        X = X[:,:,5:]
+
+    # 7) Remove unit_id, time and the three settings from data, 
+    X = X[:,:,5:]
     return X, y
