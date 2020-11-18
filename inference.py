@@ -43,7 +43,8 @@ for i in range(1, 2):
     [X_train, y_train] = prepare_sub_dataset(DATA_DIR, 
                                  train_file, 
                                  window_size=window_size,
-                                 piecewise=piecewise)
+                                 piecewise=piecewise,
+                                 predict=True)
     # load test data
     [X_test, y_test] = prepare_sub_dataset(DATA_DIR, 
                                         test_file, 
@@ -52,25 +53,30 @@ for i in range(1, 2):
                                         window_size=window_size,
                                         piecewise=piecewise)
     n_features = len(X_train[1,1,:])
-    
+    # get min / max to reconstruct predictions
+    min_ytrain = min(y_train)
+    max_ytrain = max(y_train)
+    min_ytest = min(y_test)
+    max_ytest = max(y_test)
+
     # checkpoints and logs for TensorBoard
     ckpt_file ="weights_FD00{}_piecewiseRUL_2D.hdf5".format(i)
     ckpt_path = os.path.join(CKPT_DIR, ckpt_file)
     logdir = os.path.join(LOG_DIR, datetime.now().strftime("%Y%m%d-%H%M%S"))
-    # model = train_per_variable(X_train, y_train, X_test, y_test, ckpt_path, logdir, window_size, train=False)
-    # model = train_per_variable(X_train, y_train, ckpt_path, logdir, window_size, train=False)
     model = train_2D(X_train, y_train, ckpt_path, logdir, window_size, train=False)
-
 
     # plot train predictions
     X_train = X_train.reshape(len(X_train[:,0,:]), len(X_train[0,:,:]), 14, 1)
     print(X_train.shape)
     predictions = model.predict(X_train)
+    # reconstruct predictions
+    predictions = predictions * (max_ytrain - min_ytrain) + min_ytrain
     for i in range(10):
         print("Ground truth vs prediction on train data:{} - {}".format(y_train[i], predictions[i]))
+    
     predictions = predictions.reshape(len(predictions),)
-    testRMSE = math.sqrt(sum((predictions - y_train) ** 2)/len(y_train))
-    print('Train set RMSE:{}'.format(testRMSE))
+    trainRMSE = math.sqrt(sum((predictions - y_train) ** 2)/len(y_train))
+    print('Train set RMSE:{}'.format(trainRMSE))
     unit = np.arange(0, len(y_train))
     plt.figure(1,figsize=(7,5))
     plt.plot(unit[0:162], predictions[0:162], 'r--')
@@ -84,8 +90,8 @@ for i in range(1, 2):
     X_test = X_test.reshape(len(X_test[:,0,:]), len(X_test[0,:,:]), 14, 1)
     predictions = model.predict(X_test)
     predictions = predictions
-    # reconstruct predictions from normalized values
-    # predictions = predictions * (max_y - min_y) + min_y
+    # reconstruct predictions
+    predictions = predictions * (max_ytest - min_ytest) + min_ytest
     for i in range(10):
         print("Ground truth vs prediction on test data:{} - {}".format(y_test[i], predictions[i]))
 
@@ -98,12 +104,8 @@ for i in range(1, 2):
     unit = unit.reshape(len(unit),1)
     y_test = y_test.reshape(len(y_test),1)
     predictions = predictions.reshape(len(predictions),1)
-    print(unit.shape)
-    print(y_test.shape)
-    print(predictions.shape)
     compare = np.concatenate((y_test, predictions), axis=1)
     compare = np.sort(compare, axis=0)
-    print(compare)
     plt.figure(2,figsize=(7,5))
     plt.plot(unit, compare[:,1], 'r--')
     plt.plot(unit, compare[:,0], 'b-')

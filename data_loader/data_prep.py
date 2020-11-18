@@ -23,16 +23,11 @@ def add_RUL(data, factor = 0, piecewise=True):
     else:
         df['RUL'] = RUL
     df.drop(columns=['max'],inplace = True)
-    import matplotlib.pyplot as plt
-    plt.plot(df[df['unit_number']==1]['time_in_cycles'],
-             df[df['unit_number']==1]['RUL'])
-    plt.show()
     return df[df['time_in_cycles'] > factor]
 
 def normalize_data(array, test):
     """
     This function normalizes the data with min-max normalization as specified in the scientific paper.
-
     Input: numpy array of shape (rows, columns)
     Output: normalized numpy array of shape (rows, columns).
     """
@@ -44,8 +39,8 @@ def normalize_data(array, test):
             original_col = array[:,i].reshape((len(array[:,i]), 1))
             norm_array = np.hstack((norm_array, original_col))
         else:
-            norm_array_i = (2*(array[:,i] - min(array[:,i])) / (max(array[:,i]) -
-                            min(array[:,i])) - 1).reshape((len(array[:,1]), 1))
+            norm_array_i = ((array[:,i] - min(array[:,i])) / (max(array[:,i]) -
+                            min(array[:,i]))).reshape((len(array[:,1]), 1))
             norm_array = np.hstack((norm_array,norm_array_i))
     norm_array = np.delete(norm_array, 0, 1)
     return norm_array
@@ -68,9 +63,9 @@ def sliding_window(sequence, window_size, predict=False):
     if not predict:
         # randomly shuffle the windows between themselves in unison with the correct labels
         rng_state = np.random.get_state()
-        # np.random.shuffle(X)
-        # np.random.set_state(rng_state)
-        # np.random.shuffle(y)
+        np.random.shuffle(X)
+        np.random.set_state(rng_state)
+        np.random.shuffle(y)
     return X, y
 
 def test_sliding_window(sequence, window_size):
@@ -105,7 +100,6 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     3) Appends the piece-wise RUL values.
     5) Normalizes the features, except the unit id, cycles, and RUL.
     6) Samples the sub-dataset with a sliding time window strategy for each engine unit.
-
     Inputs: the location of the dataset files.
     Returns: A numpy array of dimensions (samples, window_length, features)
     """

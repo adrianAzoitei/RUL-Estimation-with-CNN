@@ -44,9 +44,9 @@ for i in range(1, 2):
                                  piecewise=piecewise)
     n_features = len(X_train[1,1,:])
     # min-max normalize labels
-    # min_y = min(y)
-    # max_y = max(y)
-    # y = (y - min_y) / (max_y - min_y)
+    min_y = min(y_train)
+    max_y = max(y_train)
+    y_train = (y_train - min_y) / (max_y - min_y)
 
     # load test data
     [X_test, y_test] = prepare_sub_dataset(DATA_DIR, 
@@ -60,13 +60,6 @@ for i in range(1, 2):
     ckpt_file ="weights_FD00{}_piecewiseRUL_2D.hdf5".format(i)
     ckpt_path = os.path.join(CKPT_DIR, ckpt_file)
     logdir = os.path.join(LOG_DIR, datetime.now().strftime("%Y%m%d-%H%M%S"))
-
-    # train per-variable CNN
-    # model, history = train_per_variable(X_train, y_train, ckpt_path, logdir, window_size, train=True)
-
-    # train normal CNN
-    # X_test = split_timeseries_per_feature(X_test,n_features=n_features)
-    # model, history = train_per_variable(X_train, y_train, X_test, y_test, ckpt_path, logdir, window_size, train=True)
 
     # train CNN2D
     model, history = train_2D(X_train, y_train, ckpt_path, logdir, window_size, train=True)

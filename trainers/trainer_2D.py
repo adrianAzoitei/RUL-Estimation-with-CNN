@@ -10,14 +10,16 @@ def train_2D(X, y, ckpt_path, log_dir, window_size, train=True):
     tensorboard_callback = TensorBoard(log_dir=log_dir)
     lrate = LearningRateScheduler(step_decay)
 
-    # build model
+    # reshape dataset for training
     n_features = len(X[1,1,:])
     X = X.reshape(len(X[:,0,:]), len(X[0,:,:]), 14, 1)
+
+    # build model
     model = build_model(window_size)
     if train:
         history = model.fit(X,
                             y,
-                            validation_split=0.05,
+                            validation_split=0.1,
                             epochs=250,
                             batch_size=512,
                             verbose=2,
