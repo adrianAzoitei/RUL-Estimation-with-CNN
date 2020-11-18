@@ -18,10 +18,11 @@ sys.path.insert(0, path)
 #import defined variables and methods
 from utils import DATA_DIR, CKPT_DIR, LOG_DIR
 from data_loader.data_prep import prepare_sub_dataset, split_timeseries_per_feature
-from trainers.trainer_per_variable import train_per_variable
+# from trainers.trainer_per_variable import train_per_variable
+from trainers.trainer_2D import train_2D
 
 # take files sepparately
-for i in range(2, 3):
+for i in range(1, 2):
     train_file = 'train_FD00{}.txt'.format(i)
     test_file  = 'test_FD00{}.txt'.format(i)
     RUL_file = 'RUL_FD00{}.txt'.format(i)
@@ -56,13 +57,19 @@ for i in range(2, 3):
                                         piecewise=piecewise)
     
     # checkpoints and logs for TensorBoard
-    ckpt_file ="weights_FD00{}_piecewiseRUL.hdf5".format(i)
+    ckpt_file ="weights_FD00{}_piecewiseRUL_2D.hdf5".format(i)
     ckpt_path = os.path.join(CKPT_DIR, ckpt_file)
     logdir = os.path.join(LOG_DIR, datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # train per-variable CNN
-    model, history = train_per_variable(X_train, y_train, ckpt_path, logdir, window_size, train=True)
+    # model, history = train_per_variable(X_train, y_train, ckpt_path, logdir, window_size, train=True)
+
+    # train normal CNN
+    # X_test = split_timeseries_per_feature(X_test,n_features=n_features)
     # model, history = train_per_variable(X_train, y_train, X_test, y_test, ckpt_path, logdir, window_size, train=True)
+
+    # train CNN2D
+    model, history = train_2D(X_train, y_train, ckpt_path, logdir, window_size, train=True)
 
     import matplotlib.pyplot as plt
     nb_epoch = len(history.history['loss'])

@@ -2,7 +2,7 @@ import tensorflow as tf
 from keras import backend as K
 from keras.optimizers import Adam, schedules
 from keras.models import Model
-from keras.layers import Input, Dense, Flatten, Dropout, Reshape
+from keras.layers import Input, Dense, Flatten, Dropout, BatchNormalization
 from keras.layers.convolutional import Conv1D
 from keras.layers.merge import concatenate
 
@@ -26,28 +26,32 @@ def build_model(n_steps, n_features):
         conv1 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
                                     activation='tanh', name='conv1.{}'.format(i))(inp)
+        bn1   = BatchNormalization()(conv1)
         conv2 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
-                                    activation='tanh', name='conv2.{}'.format(i))(conv1)
+                                    activation='tanh', name='conv2.{}'.format(i))(bn1)
+        bn2   = BatchNormalization()(conv2)
         conv3 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
-                                    activation='tanh', name='conv3.{}'.format(i))(conv2)
+                                    activation='tanh', name='conv3.{}'.format(i))(bn2)
+        bn3   = BatchNormalization()(conv3)
         conv4 = Conv1D(filters=10, kernel_size=10,
                                     strides=1, padding="same",
-                                    activation='tanh', name='conv4.{}'.format(i))(conv3)
+                                    activation='tanh', name='conv4.{}'.format(i))(bn3)
+        bn4   = BatchNormalization()(conv4)
         conv5 = Conv1D(filters=1, kernel_size=3,
                                     strides=1, padding="same",
-                                    activation='tanh', name='conv5.{}'.format(i))(conv4)
+                                    activation='tanh', name='conv5.{}'.format(i))(bn4)
         cnns.append(conv5)
     concat = concatenate(cnns)
     flatten = Flatten()(concat)
-    dropout = Dropout(0.5)(flatten)
+    dropout = Dropout(0.8)(flatten)
     dense = Dense(100, activation='tanh')(dropout)
     output = Dense(1)(dense) 
 
     model = Model(inputs=inputs, outputs=output)
     model.summary()
     model.compile(optimizer='adam',
-                  loss='mse')
+                  loss=root_mean_squared_error)
     model.summary()
     return model

@@ -19,11 +19,12 @@ sys.path.insert(0, path)
 #import defined variables and methods
 from utils import DATA_DIR, CKPT_DIR, LOG_DIR
 from data_loader.data_prep import prepare_sub_dataset, split_timeseries_per_feature
-from trainers.trainer_per_variable import train_per_variable
+# from trainers.trainer_per_variable import train_per_variable
 # from trainers.trainer_original import train
+from trainers.trainer_2D import train_2D
 
 # take files sepparately
-for i in range(2, 3):
+for i in range(1, 2):
     train_file = 'train_FD00{}.txt'.format(i)
     test_file  = 'test_FD00{}.txt'.format(i)
     RUL_file = 'RUL_FD00{}.txt'.format(i)
@@ -53,36 +54,39 @@ for i in range(2, 3):
     n_features = len(X_train[1,1,:])
     
     # checkpoints and logs for TensorBoard
-    ckpt_file ="weights_FD00{}_piecewiseRUL.hdf5".format(i)
+    ckpt_file ="weights_FD00{}_piecewiseRUL_2D.hdf5".format(i)
     ckpt_path = os.path.join(CKPT_DIR, ckpt_file)
     logdir = os.path.join(LOG_DIR, datetime.now().strftime("%Y%m%d-%H%M%S"))
     # model = train_per_variable(X_train, y_train, X_test, y_test, ckpt_path, logdir, window_size, train=False)
-    model = train_per_variable(X_train, y_train, ckpt_path, logdir, window_size, train=False)
+    # model = train_per_variable(X_train, y_train, ckpt_path, logdir, window_size, train=False)
+    model = train_2D(X_train, y_train, ckpt_path, logdir, window_size, train=False)
+
 
     # plot train predictions
-    X_train = split_timeseries_per_feature(X_train, n_features)
+    X_train = X_train.reshape(len(X_train[:,0,:]), len(X_train[0,:,:]), 14, 1)
+    print(X_train.shape)
     predictions = model.predict(X_train)
-    for i in range(100):
+    for i in range(10):
         print("Ground truth vs prediction on train data:{} - {}".format(y_train[i], predictions[i]))
     predictions = predictions.reshape(len(predictions),)
     testRMSE = math.sqrt(sum((predictions - y_train) ** 2)/len(y_train))
-    print('Test set RMSE:{}'.format(testRMSE))
+    print('Train set RMSE:{}'.format(testRMSE))
     unit = np.arange(0, len(y_train))
     plt.figure(1,figsize=(7,5))
     plt.plot(unit[0:162], predictions[0:162], 'r--')
     plt.plot(unit[0:162], y_train[0:162], 'b-')
-    plt.xlabel('Test units')
+    plt.xlabel('Cycles')
     plt.ylabel('RUL')
     plt.grid(True)
     plt.style.use(['seaborn-ticks'])
     
     # run predictions on test set and compute rmse
-    X_test = split_timeseries_per_feature(X_test, n_features)
+    X_test = X_test.reshape(len(X_test[:,0,:]), len(X_test[0,:,:]), 14, 1)
     predictions = model.predict(X_test)
     predictions = predictions
     # reconstruct predictions from normalized values
     # predictions = predictions * (max_y - min_y) + min_y
-    for i in range(100):
+    for i in range(10):
         print("Ground truth vs prediction on test data:{} - {}".format(y_test[i], predictions[i]))
 
     # plot test units predictions
