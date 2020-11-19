@@ -43,10 +43,6 @@ for i in range(1, 2):
                                  window_size=window_size,
                                  piecewise=piecewise)
     n_features = len(X_train[1,1,:])
-    # min-max normalize labels
-    min_y = min(y_train)
-    max_y = max(y_train)
-    y_train = (y_train - min_y) / (max_y - min_y)
 
     # load test data
     [X_test, y_test] = prepare_sub_dataset(DATA_DIR, 

@@ -39,8 +39,8 @@ def normalize_data(array, test):
             original_col = array[:,i].reshape((len(array[:,i]), 1))
             norm_array = np.hstack((norm_array, original_col))
         else:
-            norm_array_i = ((array[:,i] - min(array[:,i])) / (max(array[:,i]) -
-                            min(array[:,i]))).reshape((len(array[:,1]), 1))
+            norm_array_i = (2*(array[:,i] - min(array[:,i])) / (max(array[:,i]) -
+                            min(array[:,i]))-1).reshape((len(array[:,1]), 1))
             norm_array = np.hstack((norm_array,norm_array_i))
     norm_array = np.delete(norm_array, 0, 1)
     return norm_array

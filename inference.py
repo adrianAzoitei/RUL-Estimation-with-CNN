@@ -28,7 +28,7 @@ for i in range(1, 2):
     train_file = 'train_FD00{}.txt'.format(i)
     test_file  = 'test_FD00{}.txt'.format(i)
     RUL_file = 'RUL_FD00{}.txt'.format(i)
-    print('Training on FD00{}'.format(i))
+    print('Inferring on FD00{}'.format(i))
 
     if i == 1 or i == 3:
         window_size = 30
@@ -70,30 +70,32 @@ for i in range(1, 2):
     print(X_train.shape)
     predictions = model.predict(X_train)
     # reconstruct predictions
-    predictions = predictions * (max_ytrain - min_ytrain) + min_ytrain
-    for i in range(10):
-        print("Ground truth vs prediction on train data:{} - {}".format(y_train[i], predictions[i]))
+    # predictions = predictions * (max_ytrain - min_ytrain) + min_ytrain
+    for j in range(10):
+        print("Ground truth vs prediction on train data:{} - {}".format(y_train[j], predictions[j]))
     
     predictions = predictions.reshape(len(predictions),)
     trainRMSE = math.sqrt(sum((predictions - y_train) ** 2)/len(y_train))
     print('Train set RMSE:{}'.format(trainRMSE))
     unit = np.arange(0, len(y_train))
+    plt.style.use(['ggplot'])
     plt.figure(1,figsize=(7,5))
-    plt.plot(unit[0:162], predictions[0:162], 'r--')
-    plt.plot(unit[0:162], y_train[0:162], 'b-')
-    plt.xlabel('Cycles')
+    plt.plot(unit[0:160], predictions[0:160],'r--', label='Predictions')
+    plt.plot(unit[0:160], y_train[0:160], 'b-', label='Ground truth')
+    plt.xlabel('Training cycles FD00{}'.format(i))
     plt.ylabel('RUL')
+    plt.title('Train RMSE: {:.4}'.format(trainRMSE))
+    plt.legend()
     plt.grid(True)
-    plt.style.use(['seaborn-ticks'])
+    
     
     # run predictions on test set and compute rmse
     X_test = X_test.reshape(len(X_test[:,0,:]), len(X_test[0,:,:]), 14, 1)
     predictions = model.predict(X_test)
-    predictions = predictions
     # reconstruct predictions
-    predictions = predictions * (max_ytest - min_ytest) + min_ytest
-    for i in range(10):
-        print("Ground truth vs prediction on test data:{} - {}".format(y_test[i], predictions[i]))
+    # predictions = predictions * (max_ytest - min_ytest) + min_ytest
+    for jj in range(10):
+        print("Ground truth vs prediction on test data:{} - {}".format(y_test[jj], predictions[jj]))
 
     # plot test units predictions
     predictions = predictions.reshape(len(predictions),)
@@ -107,10 +109,11 @@ for i in range(1, 2):
     compare = np.concatenate((y_test, predictions), axis=1)
     compare = np.sort(compare, axis=0)
     plt.figure(2,figsize=(7,5))
-    plt.plot(unit, compare[:,1], 'r--')
-    plt.plot(unit, compare[:,0], 'b-')
-    plt.xlabel('Test units')
+    plt.plot(unit, compare[:,1], 'r--', label='Predictions')
+    plt.plot(unit, compare[:,0], 'b-', label='Ground truth')
+    plt.xlabel('Test units FD00{}'.format(i))
     plt.ylabel('RUL')
+    plt.title('Test RMSE: {:.4}'.format(testRMSE))
+    plt.legend()
     plt.grid(True)
-    plt.style.use(['seaborn-ticks'])
     plt.show()
