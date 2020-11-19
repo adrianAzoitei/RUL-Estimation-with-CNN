@@ -23,13 +23,14 @@ sys.path.insert(0, path)
 from utils import DATA_DIR
 
 from data_loader.read_data import read_data
-from data_loader.data_prep import add_RUL_linear, add_RUL_piecewise, df_to_array
+from data_loader.data_prep import add_RUL
 
 # call read_data fn to read data from file
-train_FD004 = read_data(DATA_DIR, 'train_FD004.txt')
+train_FD002 = read_data(DATA_DIR, 'train_FD002.txt')
 
 # add RUL column
-train_FD004 = add_RUL_linear(train_FD004)
+train_FD002 = add_RUL(train_FD002)
+
 
 # known faults present in the HPC module
 plt.title('Static pressure at HPC outlet (Ps30)')
@@ -40,8 +41,8 @@ units = [1, 50, 100]
 # Plot behaviour of HPC outlet temperature w.r.t. time for some engines
 plt.figure(1)
 for i in units:
-    unit,  = plt.plot(train_FD004[train_FD004['unit_number']==i]['time_in_cycles'].values,
-        train_FD004[train_FD004['unit_number']==i]['Ps30'].values, )
+    unit,  = plt.plot(train_FD002[train_FD002['unit_number']==i]['time_in_cycles'].values,
+        train_FD002[train_FD002['unit_number']==i]['s21'].values, )
     legend.append(unit)
 plt.xlabel('Time in cycles')
 plt.legend(legend, legendNames)
@@ -49,23 +50,24 @@ plt.legend(legend, legendNames)
 
 # find correlations
 plt.figure(2)
-sns.heatmap(train_FD004.corr(), annot=True, cmap='RdYlGn')
+sns.heatmap(train_FD002.corr(), annot=True, cmap='RdYlGn')
 
 # scatter plots to see operating condition clusters in FD002 and FD004
 ax = plt.figure(3).add_subplot(projection='3d')
-ax.scatter(train_FD004['altitude'].values,
-            train_FD004['MachNo'].values,
-            train_FD004['TRA'].values)
+ax.scatter(train_FD002['altitude'].values,
+            train_FD002['MachNo'].values,
+            train_FD002['TRA'].values)
 
 ax.set_xlabel('altitude')
 ax.set_ylabel('MachNo')
 ax.set_zlabel('TRA')
+plt.title('Operating conditions FD002')
 
 # plot RUL of some engine against time to check function
 plt.figure(4)
 i = 1 # engine number
-plt.plot(train_FD004[train_FD004['unit_number']==i]['time_in_cycles'].values,
-         train_FD004[train_FD004['unit_number']==i]['RUL'].values)
+plt.plot(train_FD002[train_FD002['unit_number']==i]['time_in_cycles'].values,
+         train_FD002[train_FD002['unit_number']==i]['RUL'].values)
 plt.xlabel('Time in cycles')
 plt.ylabel('RUL of engine {}'.format(i))
 

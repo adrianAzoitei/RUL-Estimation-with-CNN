@@ -5,7 +5,7 @@ from data_loader.read_data import read_data
 
 # add RUL column
 # copyright: https://www.kaggle.com/vinayak123tyagi/damage-propagation-modeling-for-aircraft-engine
-def add_RUL(data, factor=0, piecewise=False):
+def add_RUL(data, factor = 0, piecewise=True):
     """
     This function appends a RUL column to the df by means of a linear function.
     """
@@ -17,21 +17,17 @@ def add_RUL(data, factor=0, piecewise=False):
     RUL = df['max'] - df['time_in_cycles']
     if piecewise:
         # rectify training RUL labels (Rearly = 125)
-        idx = RUL <= 125
-        df['RUL'] = 125
-        df['RUL'][idx] = df['max'] - df['time_in_cycles']
+        idx = RUL > 125
+        df['RUL'] = RUL
+        df['RUL'][idx] = 125
     else:
         df['RUL'] = RUL
     df.drop(columns=['max'],inplace = True)
-    import matplotlib.pyplot as plt
-    plt.plot(df[df['unit_number']==1]['time_in_cycles'],
-             df[df['unit_number']==1]['RUL'])
-    plt.show()
     return df[df['time_in_cycles'] > factor]
+
 def normalize_data(array, test):
     """
     This function normalizes the data with min-max normalization as specified in the scientific paper.
-
     Input: numpy array of shape (rows, columns)
     Output: normalized numpy array of shape (rows, columns).
     """
@@ -43,14 +39,13 @@ def normalize_data(array, test):
             original_col = array[:,i].reshape((len(array[:,i]), 1))
             norm_array = np.hstack((norm_array, original_col))
         else:
-            # x_norm = 2 * (x - x_min) / (x_max - x_min) - 1
             norm_array_i = (2*(array[:,i] - min(array[:,i])) / (max(array[:,i]) -
-                            min(array[:,i])) - 1).reshape((len(array[:,1]), 1))
+                            min(array[:,i]))-1).reshape((len(array[:,1]), 1))
             norm_array = np.hstack((norm_array,norm_array_i))
     norm_array = np.delete(norm_array, 0, 1)
     return norm_array
 
-def sliding_window(sequence, window_size):
+def sliding_window(sequence, window_size, predict=False):
     X = []
     y = []
     for i in range(len(sequence)):
@@ -66,12 +61,13 @@ def sliding_window(sequence, window_size):
         y.append(seq_y)
     X = np.array(X)
     y = np.array(y)
-    # randomly shuffle the windows between themselves in unison with the correct labels
-    rng_state = np.random.get_state()
-    np.random.shuffle(X)
-    np.random.set_state(rng_state)
-    np.random.shuffle(y)
-    return X,y
+    if not predict:
+        # randomly shuffle the windows between themselves in unison with the correct labels
+        rng_state = np.random.get_state()
+        np.random.shuffle(X)
+        np.random.set_state(rng_state)
+        np.random.shuffle(y)
+    return X, y
 
 def test_sliding_window(sequence, window_size):
     # sequence is the array of values associated with ONE engine unit
@@ -96,7 +92,7 @@ def split_timeseries_per_feature(data, n_features):
         data_split.append(data_feature)
     return data_split
 
-def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, window_size=30, piecewise=True):
+def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, window_size=30, piecewise=True, predict=False):
     """
     This function does the following:
     1) Reads a FD00X file associated with one sub-dataset into a pandas DataFrame.
@@ -105,22 +101,25 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     3) Appends the piece-wise RUL values.
     5) Normalizes the features, except the unit id, cycles, and RUL.
     6) Samples the sub-dataset with a sliding time window strategy for each engine unit.
-
     Inputs: the location of the dataset files.
     Returns: A numpy array of dimensions (samples, window_length, features)
     """
     # 1)
     df = read_data(data_dir, filename)
+
     # 2)
     df.drop(columns=['s1','s5','s6','s10','s16','s18','s19'], inplace=True)
+
     if not test:
         # 3)
         df = add_RUL(df, piecewise=piecewise)    
     # 4)
     print(df.head(1))
     array = df.to_numpy()
+
     # 5)
     array = normalize_data(array, test)
+
     # 6) Apply sliding window on EACH engine unit, if training data
     units = int(df['unit_number'].max())
     if not test:
@@ -128,7 +127,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         y = np.empty((1,))
         for i in range(1, units + 1):
             idx = array[:,0] == i
-            X_unit, y_unit = sliding_window(array[idx], window_size)
+            X_unit, y_unit = sliding_window(array[idx], window_size, predict=predict)
             X = np.concatenate((X, X_unit), axis=0)
             y = np.concatenate((y, y_unit), axis=0)
         # discard first elements (which are empty)
@@ -151,8 +150,9 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
             # rectify test RUL labels as well (Rearly = 125)
             idx = y > 125
             y[idx] = 125
-    # 7) Remove unit_id, time and the three settings from data
-    # time = X[:,:,1].reshape((len(X[:,1,1]), len(X[1,:,1]), 1))
+        y = y.reshape(len(y),)
+
+    # 7) Remove unit_id, time and the three settings from data, 
     X = X[:,:,5:]
     # X = np.concatenate((time, X), axis=-1)
     return X, y
