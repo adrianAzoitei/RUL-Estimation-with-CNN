@@ -5,6 +5,7 @@ from keras.models import Model
 from keras.layers import Input, Dense, Flatten, Dropout, BatchNormalization
 from keras.layers.convolutional import Conv1D
 from keras.layers.merge import concatenate
+import math
 
 def root_mean_squared_error(y_true, y_pred):
     return K.sqrt(K.mean(K.square(y_pred - y_true)))
@@ -43,6 +44,7 @@ def build_model(n_steps, n_features):
                                     strides=1, padding="same",
                                     activation='tanh', name='conv5.{}'.format(i))(bn4)
         cnns.append(conv5)
+
     concat = concatenate(cnns)
     flatten = Flatten()(concat)
     dropout = Dropout(0.8)(flatten)
@@ -53,5 +55,5 @@ def build_model(n_steps, n_features):
     model.summary()
     model.compile(optimizer='adam',
                   loss=root_mean_squared_error)
-    model.summary()
+
     return model

@@ -56,6 +56,7 @@ def sliding_window(sequence, window_size, predict=False):
             break
         # gather input and output parts of the pattern
         seq_x, seq_y = sequence[i:end_ix, :-1], sequence[end_ix-1, -1]
+        # TODO something here maybe
         X.append(seq_x)
         y.append(seq_y)
     X = np.array(X)
@@ -113,6 +114,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
         # 3)
         df = add_RUL(df, piecewise=piecewise)    
     # 4)
+    print(df.head(1))
     array = df.to_numpy()
 
     # 5)
@@ -121,7 +123,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
     # 6) Apply sliding window on EACH engine unit, if training data
     units = int(df['unit_number'].max())
     if not test:
-        X = np.empty((1, window_size, 19)) # 14 features + 5 variables (unit number, time etc.)
+        X = np.empty((1, window_size, 19)) # 21 features + 5 variables (unit number, time etc.)
         y = np.empty((1,))
         for i in range(1, units + 1):
             idx = array[:,0] == i
@@ -129,7 +131,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
             X = np.concatenate((X, X_unit), axis=0)
             y = np.concatenate((y, y_unit), axis=0)
         # discard first elements (which are empty)
-        X = X[1:]
+        X = X[1:,:,:]
         y = y[1:]
     # 6) OR take last samples of each unit, if test unit
     else:
@@ -139,7 +141,7 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
             X_unit = test_sliding_window(array[idx], window_size)
             X = np.concatenate((X, X_unit), axis=0)
         # discard first elements (which are empty)
-        X = X[1:]
+        X = X[1:,:,:]
         # add RUL column
         data_path = os.path.join(data_dir, validation_RUL_file)
         test_RUL = pd.read_csv(data_path, header=None, dtype='float')
@@ -152,4 +154,5 @@ def prepare_sub_dataset(data_dir, filename, validation_RUL_file="", test=False, 
 
     # 7) Remove unit_id, time and the three settings from data, 
     X = X[:,:,5:]
+    # X = np.concatenate((time, X), axis=-1)
     return X, y
